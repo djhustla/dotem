@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Inscription</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 20px;
+        }
+
+        .form-container {
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          width: 100%;
+          max-width: 500px;
+          overflow: hidden;
+        }
+
+        .header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          padding: 40px 30px 20px 30px;
+          text-align: center;
+          color: white;
+          position: relative;
+        }
+
+        .header h2 {
+          font-size: 2rem;
+          font-weight: 600;
+        }
+
+        .header p {
+          font-size: 0.95rem;
+          opacity: 0.9;
+        }
+
+        .back-btn {
+          position: absolute;
+          top: 15px;
+          left: 15px;
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          border: none;
+          padding: 8px 14px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: 0.3s;
+        }
+
+        .back-btn:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        .form-content {
+          padding: 40px 30px;
+        }
+
+        .form-group { margin-bottom: 20px; }
+
+        label {
+          display: block;
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 8px;
+          font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+          width: 100%;
+          padding: 14px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 1rem;
+          transition: all 0.3s;
+        }
+
+        input:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .photo-section {
+          margin: 25px 0;
+          padding: 20px;
+          background: #f8f9ff;
+          border-radius: 12px;
+        }
+
+        .photo-preview {
+          width: 120px;
+          height: 120px;
+          border: 3px dashed #667eea;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          overflow: hidden;
+          border-radius: 12px;
+          background: white;
+        }
+
+        .photo-preview span { font-size: 3rem; color: #9ca3af; }
+
+        .photo-preview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .photo-button,
+        button[type="submit"] {
+          width: 100%;
+          padding: 15px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          font-size: 1rem;
+          font-weight: 600;
+          margin-top: 10px;
+          transition: 0.3s;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .error {
+          background: #fee;
+          color: #dc2626;
+          padding: 12px 16px;
+          border-radius: 10px;
+          font-size: 0.9rem;
+          margin-bottom: 20px;
+          border: 1px solid #fecaca;
+          display: none;
+        }
+
+        @media (max-width: 480px) {
+          .header h2 { font-size: 1.6rem; }
+          .form-content { padding: 25px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='/index.html'">⬅️ Accueil</button>
+        <h2>Inscription</h2>
+        <p>Créez votre compte gratuitement</p>
+    </div>
+
+    <div class="form-content">
+        <div class="error" id="errorMsg"></div>
+
+        <form id="signupForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Adresse email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="photo-section">
+                <label class="photo-section-title">Photo de profil</label>
+                <div class="photo-preview" id="photoPreview"><span>📷</span></div>
+                <button type="button" class="photo-button" id="choosePhoto">Choisir une photo</button>
+                <input type="file" id="photo" name="file" accept="image/*" style="display:none;" required>
+            </div>
+
+            <button type="submit" id="submitBtn">S'inscrire</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const chooseBtn = document.getElementById("choosePhoto");
+    const fileInput = document.getElementById("photo");
+    const photoPreview = document.getElementById("photoPreview");
+    const errorMsg = document.getElementById("errorMsg");
+    const submitBtn = document.getElementById("submitBtn");
+
+    chooseBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          photoPreview.innerHTML = `<img src="${e.target.result}" alt="Aperçu">`;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        photoPreview.innerHTML = `<span>📷</span>`;
+      }
+    });
+
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData();
+      formData.append("username", document.getElementById("username").value);
+      formData.append("email", document.getElementById("email").value);
+      formData.append("password", document.getElementById("password").value);
+      formData.append("file", fileInput.files[0]);
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Inscription...";
+
+      try {
+        const resp = await fetch("/api/users/register", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!resp.ok) throw new Error("Erreur lors de l'inscription");
+
+        alert("✅ Inscription réussie !");
+        window.location.href = "/index.html";
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        errorMsg.style.display = "block";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "S'inscrire";
+      }
+    });
+</script>
+
+</body>
+</html>

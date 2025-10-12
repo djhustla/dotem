@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liste des Utilisateurs</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; padding: 20px; position: relative;
+    }
+    body::before {
+      content: ''; position: fixed; top:0; left:0; width:100%; height:100%;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events:none; z-index:0;
+    }
+    .container { max-width:900px; margin:0 auto; position:relative; z-index:1; }
+    .header { text-align:center; margin-bottom:20px; }
+    .header h1 { color:white; font-size:2.5rem; font-weight:700; margin-bottom:10px; text-shadow: 0 2px 10px rgba(0,0,0,0.2);}
+    .header p { color: rgba(255,255,255,0.9); font-size:1rem; }
+    .back-button, .logout-button {
+      display:inline-flex; align-items:center; gap:8px; padding:12px 24px; margin-bottom:20px;
+      background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color:white;
+      border:2px solid rgba(255,255,255,0.3); border-radius:12px; font-size:1rem; font-weight:600;
+      cursor:pointer; text-decoration:none; transition:all 0.3s;
+    }
+    .back-button:hover, .logout-button:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.2);}
+    .user-list { display:flex; flex-direction:column; gap:16px; }
+    .user-card { position:relative; display:flex; align-items:center; background:white; border-radius:16px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.1); transition:all 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .user-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,0.15); }
+    .user-photo { width:80px; height:80px; border-radius:50%; object-fit:cover; margin-right:20px; border:3px solid #667eea; flex-shrink:0; }
+    .user-info { flex:1; }
+    .username { font-size:1.3rem; font-weight:700; color:#374151; margin-bottom:4px; }
+    .user-role { font-size:0.9rem; color:#9ca3af; font-weight:500; }
+    .loading, .error { text-align:center; padding:40px; background:white; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+    .loading { color:#667eea; font-size:1.1rem; }
+    .error { color:#dc2626; font-size:1.1rem; }
+
+    /* Menu flottant */
+    .user-menu {
+      position:absolute;
+      top:50%; right:20px;
+      transform: translateY(-50%);
+      background:white;
+      border-radius:12px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity 0.3s;
+      z-index:10;
+    }
+    .user-card:hover .user-menu {
+      opacity:1;
+      pointer-events:auto;
+    }
+    .user-menu a {
+      padding:10px 16px;
+      text-decoration:none;
+      font-weight:600;
+      font-size:0.95rem;
+      display:block;
+      transition:background 0.2s;
+    }
+    .user-menu a.message { background:#3b82f6; color:white; }
+    .user-menu a.message:hover { background:#2563eb; }
+    .user-menu a.profile { background:#16a34a; color:white; }
+    .user-menu a.profile:hover { background:#15803d; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Liste des Utilisateurs</h1>
+    <p>Découvrez les membres de la communauté</p>
+  </div>
+
+  <a href="/menu/menu.html" class="back-button">← Retour au menu</a>
+  <button class="logout-button" id="btnLogout">Déconnexion</button>
+
+  <div class="user-list" id="userList">
+    <div class="loading">Chargement des utilisateurs...</div>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('accessToken');
+
+  if (!token) {
+    alert('Vous devez être connecté pour voir la liste des utilisateurs');
+    window.location.href = '/connection/connection.html';
+  }
+
+  const userList = document.getElementById("userList");
+
+  async function loadUsers() {
+    try {
+      const resp = await fetch('/api/users/all', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!resp.ok) throw new Error("Erreur de chargement");
+
+      const users = await resp.json();
+      userList.innerHTML = "";
+
+      if (users.length === 0) {
+        userList.innerHTML = '<div class="loading">Aucun utilisateur trouvé</div>';
+        return;
+      }
+
+      users.forEach(user => {
+        const card = document.createElement("div");
+        card.className = "user-card";
+
+        const img = document.createElement("img");
+        img.className = "user-photo";
+        img.src = user.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&size=80&background=667eea&color=fff`;
+        img.alt = "Photo de " + user.username;
+        img.onerror = function() {
+          this.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&size=80&background=667eea&color=fff`;
+        };
+
+        const info = document.createElement("div");
+        info.className = "user-info";
+
+        const name = document.createElement("div");
+        name.className = "username";
+        name.textContent = user.username;
+
+        const role = document.createElement("div");
+        role.className = "user-role";
+        role.textContent = user.role || "Membre";
+
+        info.appendChild(name);
+        info.appendChild(role);
+
+        // Menu flottant
+        const menu = document.createElement("div");
+        menu.className = "user-menu";
+
+        const msgLink = document.createElement("a");
+        msgLink.href = `/menu/conversation.html?userId=${user.id}`;
+        msgLink.textContent = "Écrire un message";
+        msgLink.className = "message";
+
+        const profileLink = document.createElement("a");
+        profileLink.href = `/menu/profilUser.html?userId=${user.id}`;
+        profileLink.textContent = "Voir le profil";
+        profileLink.className = "profile";
+
+        menu.appendChild(msgLink);
+        menu.appendChild(profileLink);
+
+        card.appendChild(img);
+        card.appendChild(info);
+        card.appendChild(menu);
+        userList.appendChild(card);
+      });
+    } catch (err) {
+      userList.innerHTML = '<div class="error">Erreur lors du chargement des utilisateurs</div>';
+      console.error(err);
+    }
+  }
+
+  loadUsers();
+
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return;
+
+    try {
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
+      if (res.ok) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        alert('Déconnexion réussie');
+        window.location.href = '/connection/connection.html';
+      } else {
+        alert('Erreur lors de la déconnexion');
+      }
+    } catch (err) {
+      alert('Erreur réseau lors de la déconnexion');
+    }
+  });
+</script>
+
+</body>
+</html>

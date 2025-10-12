@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Playlists</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: linear-gradient(135deg, #8e44ad, #9b59b6, #a66dd4);
+          min-height:100vh;
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          padding:20px;
+          position:relative;
+        }
+
+        .buttons-container {
+          position: fixed; top:20px; right:20px;
+          display:flex; gap:10px; z-index:100;
+        }
+        .buttons-container button {
+          background:#fff; color:#8e44ad; border:none; padding:8px 16px; border-radius:10px;
+          font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.2); transition:all 0.2s;
+        }
+        .buttons-container button:hover { background:#8e44ad; color:#fff; }
+
+        .menu-container {
+          background:white;
+          border-radius:20px;
+          box-shadow:0 10px 40px rgba(0,0,0,0.25);
+          width:100%;
+          max-width:400px;
+          padding:30px;
+          text-align:center;
+        }
+
+        h1 { margin-bottom:25px; font-size:2rem; color:#6c3483; }
+
+        .menu {
+          display:flex;
+          flex-direction:column;
+          gap:15px;
+        }
+
+        .menu button {
+          padding:15px;
+          font-size:1.1rem;
+          font-weight:600;
+          border:none;
+          border-radius:12px;
+          cursor:pointer;
+          transition:all 0.3s ease;
+          background: linear-gradient(135deg, #9b59b6, #8e44ad);
+          color:white;
+          box-shadow:0 4px 12px rgba(155,89,182,0.4);
+        }
+
+        .menu button:hover:not(:disabled) {
+          transform:translateY(-2px);
+          box-shadow:0 6px 16px rgba(155,89,182,0.6);
+        }
+
+        @media (max-width:500px){
+          h1{font-size:1.5rem;}
+          .menu button{font-size:1rem;padding:12px;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="buttons-container">
+    <button onclick="window.location.href='menu.html'">🔙 Retour au menu principal</button>
+    <button id="btnLogout">🚪 Déconnexion</button>
+</div>
+
+<div class="menu-container">
+    <h1>Playlists</h1>
+    <div class="menu">
+        <button onclick="window.location.href='playlist.html?src=fr.txt&title=Rap Français'">🎵 Rap Français</button>
+        <button disabled>🌍 Afrobeat</button>
+        <button onclick="window.location.href='playlist.html?src=us.txt&title=Rap Américain'">🇺🇸 Rap Américain</button>
+        <button onclick="window.location.href='playlist.html?src=dutch.txt&title=Dutch Vibes'">🇳🇱 DutchVibes</button>
+    </div>
+</div>
+
+<script>
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      alert('Déconnexion réussie');
+      window.location.href = '/connection/connection.html';
+    });
+</script>
+
+</body>
+</html>

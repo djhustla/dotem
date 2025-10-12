@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Playlist</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+          font-family: Arial, sans-serif;
+          background: #9b59b6;
+          margin:0;
+          padding:20px;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          position:relative;
+        }
+
+        /* Boutons fixes en haut à droite */
+        .buttons-container {
+          position: fixed; top:20px; right:20px;
+          display:flex; gap:10px; z-index:100;
+        }
+        .buttons-container button {
+          background:#fff; color:#8e44ad; border:none; padding:8px 16px; border-radius:10px;
+          font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.2); transition:all 0.2s;
+        }
+        .buttons-container button:hover { background:#8e44ad; color:#fff; }
+
+        h1 {
+          margin:20px 0;
+          color:#fff;
+        }
+
+        .container {
+          display:grid;
+          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+          gap:20px;
+          width:100%;
+          max-width:1200px;
+          margin-top:70px; /* Pour laisser de la place aux boutons fixes */
+        }
+
+        .card {
+          background:#fff;
+          border-radius:12px;
+          box-shadow:0 4px 10px rgba(0,0,0,0.1);
+          padding:15px;
+          display:flex;
+          flex-direction:column;
+          transition: transform 0.2s ease;
+        }
+        .card:hover { transform: translateY(-5px); }
+
+        iframe.youtube { width:100%; height:200px; border-radius:8px; }
+        iframe.spotify { margin:10px 0; width:100%; height:80px; border-radius:8px; }
+
+        .info {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          margin-top:10px;
+        }
+        .info img { width:60px; height:60px; border-radius:8px; object-fit:cover; margin-left:10px; }
+        .title { font-size:1rem; font-weight:bold; color:#222; flex:1; text-align:left; }
+
+        .pagination {
+          margin:20px 0;
+          display:flex;
+          gap:10px;
+        }
+        .pagination button {
+          padding:8px 14px;
+          border:none;
+          border-radius:8px;
+          cursor:pointer;
+          background:white;
+          color:#8e44ad;
+          font-weight:bold;
+          box-shadow:0 2px 6px rgba(0,0,0,0.2);
+          transition:0.2s;
+        }
+        .pagination button:hover:not(:disabled) {
+          background:#8e44ad;
+          color:white;
+        }
+        .pagination button:disabled { opacity:0.5; cursor:not-allowed; }
+
+        @media(max-width:500px){
+          iframe.youtube { height:160px; }
+          .info img { width:50px; height:50px; }
+          .title { font-size:0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Boutons fixes -->
+<div class="buttons-container">
+    <button id="btnRetour">🔙 Retour au menu principal</button>
+    <button id="btnLogout">🚪 Déconnexion</button>
+</div>
+
+<h1>🎵 Playlist</h1>
+<div class="container" id="playlist"></div>
+
+<!-- Pagination -->
+<div class="pagination" id="pagination"></div>
+
+<script>
+    const ITEMS_PER_PAGE = 20;
+    let currentPage = 1;
+    let allMusic = [];
+
+    // Boutons
+    document.getElementById("btnRetour").addEventListener("click", () => {
+      window.location.href = "menu.html";
+    });
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      alert('Déconnexion réussie');
+      window.location.href = '/connection/connection.html';
+    });
+
+    // Fonction pour afficher la page actuelle
+    function renderPage() {
+      const container = document.getElementById('playlist');
+      container.innerHTML = '';
+
+      if (allMusic.length === 0) {
+        container.innerHTML = `<div style="color:white;">Aucun morceau à afficher.</div>`;
+        document.getElementById('pagination').innerHTML = '';
+        return;
+      }
+
+      const start = (currentPage - 1) * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+      const pageItems = allMusic.slice(start, end);
+
+      pageItems.forEach(music => {
+        const title = music.titreComplet || "Sans titre";
+        const imgUrl = music.photo || "";
+        const spotifyUrl = music.spotifyUrl || "";
+        const youtubeUrl = music.youtubeUrl || "";
+
+        const spotifyEmbed = spotifyUrl.replace("open.spotify.com/track", "open.spotify.com/embed/track");
+
+        let youtubeId = youtubeUrl.split('v=')[1];
+        if (youtubeId) {
+          const amp = youtubeId.indexOf('&');
+          if (amp !== -1) youtubeId = youtubeId.substring(0, amp);
+        }
+        const youtubeEmbed = `https://www.youtube.com/embed/${youtubeId}`;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <iframe class="youtube" src="${youtubeEmbed}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+          <iframe class="spotify" src="${spotifyEmbed}" frameborder="0" allow="encrypted-media"></iframe>
+          <div class="info">
+            <div class="title">${title}</div>
+            <img src="${imgUrl}" alt="${title}">
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      renderPagination();
+    }
+
+    // Fonction pour créer les boutons de pagination
+    function renderPagination() {
+      const totalPages = Math.ceil(allMusic.length / ITEMS_PER_PAGE);
+      const paginationDiv = document.getElementById('pagination');
+      paginationDiv.innerHTML = '';
+
+      const prevBtn = document.createElement('button');
+      prevBtn.textContent = "⬅ Précédent";
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.addEventListener('click', () => { currentPage--; renderPage(); });
+      paginationDiv.appendChild(prevBtn);
+
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = "Suivant ➡";
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.addEventListener('click', () => { currentPage++; renderPage(); });
+      paginationDiv.appendChild(nextBtn);
+    }
+
+    // Chargement de la playlist JSON ligne par ligne
+    async function loadPlaylist() {
+      try {
+        const response = await fetch('/playlist/dutch.txt');
+        if (!response.ok) throw new Error('Impossible de charger le fichier playlist');
+
+        const text = await response.text();
+        const lines = text.trim().split('\n').filter(line => line.trim() !== '');
+        allMusic = [];
+
+        lines.forEach(line => {
+          try {
+            const music = JSON.parse(line);
+            allMusic.push(music);
+          } catch { return; }
+        });
+
+        currentPage = 1;
+        renderPage();
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('playlist').innerHTML = `<div style="color:white;">Erreur : ${err.message}</div>`;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadPlaylist);
+</script>
+</body>
+</html>
