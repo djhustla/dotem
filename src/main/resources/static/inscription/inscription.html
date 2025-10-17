@@ -199,93 +199,96 @@
 </div>
 
 <script>
-    // Dans inscription.html, remplace cette partie du JavaScript:
+    // Remplace JUSTE la fonction addEventListener du formulaire
 
-document.getElementById("signupForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+ document.getElementById("signupForm").addEventListener("submit", async (e) => {
+   e.preventDefault();
 
-  const fileInput = document.getElementById("photo");
-  const submitBtn = document.getElementById("submitBtn");
-  const errorMsg = document.getElementById("errorMsg");
+   const fileInput = document.getElementById("photo");
 
-  // ======== VÉRIFICATION 1: Photo sélectionnée ? ========
-  if (!fileInput.files || fileInput.files.length === 0) {
-    alert("❌ Erreur: Aucune photo sélectionnée!");
-    return;
-  }
+   // ===== VÉRIFICATION 1: Photo sélectionnée ? =====
+   if (!fileInput.files || fileInput.files.length === 0) {
+     alert("❌ Erreur: Aucune photo sélectionnée");
+     return;
+   }
 
-  const file = fileInput.files[0];
+   const file = fileInput.files[0];
 
-  // ======== VÉRIFICATION 2: Type de fichier ========
-  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-  if (!allowedTypes.includes(file.type)) {
-    alert("❌ Erreur: Le fichier doit être une image (JPG, PNG, GIF, WebP)");
-    return;
-  }
+   // ===== VÉRIFICATION 2: Type de fichier valide ? =====
+   const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+   if (!allowedTypes.includes(file.type)) {
+     alert("❌ Erreur: Format invalide\nLe fichier doit être: JPG, PNG, GIF ou WebP\nVous avez envoyé: " + file.type);
+     return;
+   }
 
-  // ======== VÉRIFICATION 3: Taille du fichier ========
-  const maxSize = 5 * 1024 * 1024; // 5MB
-  if (file.size > maxSize) {
-    alert("❌ Erreur: Le fichier est trop gros (max 5MB)");
-    return;
-  }
+   // ===== VÉRIFICATION 3: Taille du fichier =====
+   const maxSize = 5 * 1024 * 1024; // 5MB
+   if (file.size > maxSize) {
+     const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+     alert("❌ Erreur: Fichier trop volumineux\nTaille maximum: 5MB\nVotre fichier: " + sizeMB + "MB");
+     return;
+   }
 
-  // ======== VÉRIFICATION 4: Nom de fichier valide ========
-  if (!file.name || file.name.trim() === "") {
-    alert("❌ Erreur: Nom de fichier invalide");
-    return;
-  }
+   // ===== VÉRIFICATION 4: Nom de fichier valide =====
+   if (!file.name || file.name.trim() === "") {
+     alert("❌ Erreur: Nom de fichier invalide ou vide");
+     return;
+   }
 
-  // ======== VÉRIFICATION 5: Tous les champs remplis ========
-  const username = document.getElementById("username").value.trim();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+   // ===== VÉRIFICATION 5: Tous les champs remplis ? =====
+   const username = document.getElementById("username").value.trim();
+   const email = document.getElementById("email").value.trim();
+   const password = document.getElementById("password").value.trim();
 
-  if (!username || !email || !password) {
-    alert("❌ Erreur: Tous les champs doivent être remplis");
-    return;
-  }
+   if (!username) {
+     alert("❌ Erreur: Entrez un nom d'utilisateur");
+     return;
+   }
+   if (!email) {
+     alert("❌ Erreur: Entrez une adresse email");
+     return;
+   }
+   if (!password) {
+     alert("❌ Erreur: Entrez un mot de passe");
+     return;
+   }
 
-  // ======== Si tout est bon, créer FormData ========
-  const formData = new FormData();
-  formData.append("username", username);
-  formData.append("email", email);
-  formData.append("password", password);
-  formData.append("file", file); // Ajouter le fichier
+   // ===== Si tout est bon, envoyer =====
+   const formData = new FormData();
+   formData.append("username", username);
+   formData.append("email", email);
+   formData.append("password", password);
+   formData.append("file", file);
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Inscription...";
+   submitBtn.disabled = true;
+   submitBtn.textContent = "Inscription...";
 
-  try {
-    const resp = await fetch("/api/users/register", {
-      method: "POST",
-      body: formData
-    });
+   try {
+     const resp = await fetch("/api/users/register", {
+       method: "POST",
+       body: formData
+     });
 
-    // ======== VÉRIFICATION 6: Réponse du serveur ========
-    if (!resp.ok) {
-      const errorText = await resp.text();
-      alert("❌ Erreur inscription: " + errorText);
-      errorMsg.textContent = "Erreur: " + errorText;
-      errorMsg.style.display = "block";
-      return;
-    }
+     if (!resp.ok) {
+       const errorText = await resp.text();
+       alert("❌ Erreur serveur:\n" + errorText);
+       errorMsg.textContent = errorText;
+       errorMsg.style.display = "block";
+       return;
+     }
 
-    // ======== Succès ! ========
-    alert("✅ Inscription réussie!");
-    window.location.href = "/index.html";
+     alert("✅ Inscription réussie!");
+     window.location.href = "/index.html";
 
-  } catch (err) {
-    alert("❌ Erreur réseau: " + err.message);
-    errorMsg.textContent = "Erreur réseau: " + err.message;
-    errorMsg.style.display = "block";
-    console.error("Erreur inscription:", err);
-
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "S'inscrire";
-  }
-});
+   } catch (err) {
+     alert("❌ Erreur réseau:\n" + err.message);
+     errorMsg.textContent = err.message;
+     errorMsg.style.display = "block";
+   } finally {
+     submitBtn.disabled = false;
+     submitBtn.textContent = "S'inscrire";
+   }
+ });
 </script>
 
 </body>
