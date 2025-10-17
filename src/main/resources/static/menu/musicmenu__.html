@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<body>
+<pre id="content">Chargement via proxy...</pre>
+
+<script>
+    // Proxy CORS qui fonctionne
+    const proxyUrl = 'https://corsproxy.io/?';
+    const targetUrl = 'http://monappmusique.42web.io/playlist_list/fr.txt';
+
+    fetch(proxyUrl + encodeURIComponent(targetUrl))
+        .then(response => response.text())
+        .then(text => {
+            document.getElementById('content').textContent = text;
+        })
+        .catch(error => {
+            document.getElementById('content').textContent = 'Erreur: ' + error.message;
+        });
+</script>
+</body>
+</html>

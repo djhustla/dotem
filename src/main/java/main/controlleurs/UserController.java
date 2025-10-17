@@ -13,9 +13,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+
+import static main.hebergeurs.infinityfree.InfinityFreeUploader.uploadFile;
 
 @RestController
 @RequestMapping("/api/users")
@@ -30,13 +34,11 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
-    @Value("${file.upload-dir}")
-    private String uploadDir; // dossier configurable depuis properties
+
 
     // ===========================
     // ENDPOINTS PUBLICS
     // ===========================
-
 
 
     @PostMapping("/register")
@@ -46,41 +48,53 @@ public class UserController {
             @RequestParam("password") String password,
             @RequestParam("file") MultipartFile file) {
 
+        String uploadedFileUrl = null;
+
         try {
-            // Utilise le chemin configuré dans application.properties
-            File dir = new File(uploadDir);
-            if (!dir.exists()) {
-                boolean created = dir.mkdirs();
-                if (!created) {
-                    return ResponseEntity.status(500)
-                            .body("Impossible de créer le dossier: " + uploadDir);
-                }
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body("Le fichier photo est requis");
             }
 
-            // Nom unique du fichier
             String originalName = file.getOriginalFilename();
             if (originalName == null || originalName.isEmpty()) {
                 return ResponseEntity.badRequest().body("Nom de fichier invalide");
             }
 
-            String fileName = System.currentTimeMillis() + "_" + originalName;
-            String filePath = uploadDir + "/" + fileName;
+            // Créer un fichier temporaire en mémoire
+            Path tempFile = Files.createTempFile("upload_", "_" + originalName);
 
-            // Sauvegarde du fichier
-            file.transferTo(new File(filePath));
+            try {
+                // Sauvegarde temporaire très rapide
+                file.transferTo(tempFile);
 
-            // Crée l'utilisateur - attention a l adresse de la photo
+                // Générer un nom de fichier unique
+                String tempFileName = System.currentTimeMillis() + "_" + originalName;
+                String remoteFilePath = "photos/" + tempFileName;
 
-            filePath = "/photos/" + fileName;
-            User user = userService.createUser(username, email, password, filePath);
+                // Upload vers InfinityFree
+                uploadedFileUrl = uploadFile(tempFile.toString(), remoteFilePath);
 
-            String responseText = "Nom utilisateur : " + user.getUsername() +
-                    "\nEmail : " + email +
-                    "\nMot de passe : " + password +
-                    "\nChemin fichier serveur : " + filePath +
-                    "\nRôle : " + user.getRole();
+                // Vérifier si l'upload a réussi
+                if (uploadedFileUrl == null) {
+                    return ResponseEntity.status(500)
+                            .body("Erreur lors de l'upload de la photo vers le serveur");
+                }
 
-            return ResponseEntity.ok(responseText);
+                // Crée l'utilisateur
+                User user = userService.createUser(username, email, password, uploadedFileUrl);
+
+                String responseText = "Nom utilisateur : " + user.getUsername() +
+                        "\nEmail : " + email +
+                        "\nMot de passe : " + password +
+                        "\nURL de la photo : " + uploadedFileUrl +
+                        "\nRôle : " + user.getRole();
+
+                return ResponseEntity.ok(responseText);
+
+            } finally {
+                // Nettoyage IMMÉDIAT du fichier temporaire
+                Files.deleteIfExists(tempFile);
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -98,26 +112,38 @@ public class UserController {
             @RequestParam("password") String password,
             @RequestParam("file") MultipartFile file) {
 
+        String uploadedFileUrl = null;
+
         try {
-            File dir = new File(uploadDir);
-            if (!dir.exists()) {
-                boolean created = dir.mkdirs();
-                if (!created) {
-                    return ResponseEntity.status(500)
-                            .body("Impossible de créer le dossier: " + uploadDir);
-                }
+            // Vérifications de base
+            if (file.isEmpty()) {
+                return ResponseEntity.badRequest().body("Le fichier photo est requis");
             }
 
-            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            String filePath = uploadDir + "/" + fileName;
+            String originalName = file.getOriginalFilename();
+            if (originalName == null || originalName.isEmpty()) {
+                return ResponseEntity.badRequest().body("Nom de fichier invalide");
+            }
 
-            file.transferTo(new File(filePath));
+            // Générer un nom de fichier unique
+            String tempFileName = System.currentTimeMillis() + "_" + originalName;
+            String remoteFilePath = "photos/" + tempFileName;
 
-            filePath = "/photos/" + fileName;
-            User user = userService.createUserWithRole(username, email, password, "ADMIN", filePath);
+            // Upload DIRECT vers InfinityFree sans sauvegarde locale
+            uploadedFileUrl = uploadFile( tempFileName, remoteFilePath);
+
+            // Vérifier si l'upload a réussi
+            if (uploadedFileUrl == null) {
+                return ResponseEntity.status(500)
+                        .body("Erreur lors de l'upload de la photo vers le serveur");
+            }
+
+            // Crée l'administrateur avec l'URL de la photo depuis InfinityFree
+            User user = userService.createUserWithRole(username, email, password, "ADMIN", uploadedFileUrl);
 
             return ResponseEntity.ok("Administrateur créé avec succès : " + user.getUsername()
-                    + " (Rôle: " + user.getRole() + ")");
+                    + " (Rôle: " + user.getRole() + ")"
+                    + "\nURL de la photo : " + uploadedFileUrl);
 
         } catch (Exception e) {
             e.printStackTrace();

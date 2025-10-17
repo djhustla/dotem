@@ -96,6 +96,21 @@
       background:#8e44ad;
       color:#fff;
     }
+
+    .loading {
+      color: white;
+      font-size: 1.2rem;
+      margin: 20px 0;
+    }
+
+    .error {
+      color: #ff6b6b;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -106,6 +121,7 @@
 </div>
 
 <h1 id="pageTitle">🎵 Playlist</h1>
+<div class="loading" id="loading">Chargement de la playlist...</div>
 <div class="container" id="playlist"></div>
 <div class="pagination" id="pagination"></div>
 
@@ -131,27 +147,46 @@
     const title = params.get("title") || "Playlist";
 
     document.getElementById("pageTitle").textContent = `🎵 ${title}`;
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("playlist").innerHTML = "";
 
     try {
-      const response = await fetch(`/playlist/${src}`);
+      // Utilisation du proxy CORS pour charger la playlist
+      const proxyUrl = 'https://corsproxy.io/?';
+      const targetUrl = `http://monappmusique.42web.io/playlist_list/${src}`;
+
+      const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
       if (!response.ok) throw new Error('Impossible de charger le fichier playlist');
 
       const text = await response.text();
       allSongs = text.trim().split('\n')
         .filter(line => line.trim() !== '')
-        .map(line => { try { return JSON.parse(line); } catch { return null; } })
+        .map(line => {
+          try {
+            return JSON.parse(line);
+          } catch (e) {
+            console.warn("Ligne JSON invalide ignorée:", line);
+            return null;
+          }
+        })
         .filter(Boolean);
 
+      document.getElementById("loading").style.display = "none";
+
       if (allSongs.length === 0) {
-        document.getElementById('playlist').innerHTML = `<div style="color:white;">Aucun morceau à afficher.</div>`;
+        document.getElementById('playlist').innerHTML =
+          `<div class="error">Aucun morceau trouvé dans cette playlist.</div>`;
         return;
       }
 
+      console.log(`✅ ${allSongs.length} morceaux chargés depuis ${src}`);
       renderPage(currentPage);
       renderPagination();
     } catch (err) {
       console.error(err);
-      document.getElementById('playlist').innerHTML = `<div style="color:white;">Erreur : ${err.message}</div>`;
+      document.getElementById("loading").style.display = "none";
+      document.getElementById('playlist').innerHTML =
+        `<div class="error">Erreur : ${err.message}</div>`;
     }
   }
 
@@ -170,23 +205,41 @@
       const youtubeUrl = music.youtubeUrl || "";
 
       const spotifyEmbed = spotifyUrl.replace("open.spotify.com/track", "open.spotify.com/embed/track");
-      let youtubeId = youtubeUrl.split('v=')[1];
-      if (youtubeId) {
-        const amp = youtubeId.indexOf('&');
-        if (amp !== -1) youtubeId = youtubeId.substring(0, amp);
+
+      let youtubeEmbed = "";
+      if (youtubeUrl) {
+        let youtubeId = youtubeUrl.split('v=')[1];
+        if (youtubeId) {
+          const amp = youtubeId.indexOf('&');
+          if (amp !== -1) youtubeId = youtubeId.substring(0, amp);
+          youtubeEmbed = `https://www.youtube.com/embed/${youtubeId}`;
+        }
       }
-      const youtubeEmbed = `https://www.youtube.com/embed/${youtubeId}`;
 
       const card = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = `
-        <iframe class="youtube" src="${youtubeEmbed}" frameborder="0" allowfullscreen></iframe>
-        <iframe class="spotify" src="${spotifyEmbed}" frameborder="0" allow="encrypted-media"></iframe>
+
+      let htmlContent = '';
+
+      // Ajouter YouTube si disponible
+      if (youtubeEmbed) {
+        htmlContent += `<iframe class="youtube" src="${youtubeEmbed}" frameborder="0" allowfullscreen></iframe>`;
+      }
+
+      // Ajouter Spotify si disponible
+      if (spotifyEmbed) {
+        htmlContent += `<iframe class="spotify" src="${spotifyEmbed}" frameborder="0" allow="encrypted-media"></iframe>`;
+      }
+
+      // Informations de la musique
+      htmlContent += `
         <div class="info">
           <div class="title">${title}</div>
-          <img src="${imgUrl}" alt="${title}">
+          ${imgUrl ? `<img src="${imgUrl}" alt="${title}" onerror="this.style.display='none'">` : ''}
         </div>
       `;
+
+      card.innerHTML = htmlContent;
       container.appendChild(card);
     });
   }
@@ -195,6 +248,8 @@
     const pagination = document.getElementById('pagination');
     pagination.innerHTML = '';
     const totalPages = Math.ceil(allSongs.length / itemsPerPage);
+
+    if (totalPages <= 1) return;
 
     for (let i = 1; i <= totalPages; i++) {
       const btn = document.createElement('button');
