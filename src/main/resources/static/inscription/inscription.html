@@ -199,96 +199,259 @@
 </div>
 
 <script>
-    // Remplace JUSTE la fonction addEventListener du formulaire
+    const chooseBtn = document.getElementById("choosePhoto");
+    const fileInput = document.getElementById("photo");
+    const photoPreview = document.getElementById("photoPreview");
+    const errorMsg = document.getElementById("errorMsg");
+    const submitBtn = document.getElementById("submitBtn");
 
- document.getElementById("signupForm").addEventListener("submit", async (e) => {
-   e.preventDefault();
+    // Formats d'image acceptés
+    const ACCEPTED_FORMATS = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-   const fileInput = document.getElementById("photo");
+    chooseBtn.addEventListener("click", () => fileInput.click());
 
-   // ===== VÉRIFICATION 1: Photo sélectionnée ? =====
-   if (!fileInput.files || fileInput.files.length === 0) {
-     alert("❌ Erreur: Aucune photo sélectionnée");
-     return;
-   }
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (file) {
+        // Vérification du format
+        if (!ACCEPTED_FORMATS.includes(file.type)) {
+          showAlert('Format non supporté', 'Veuillez choisir une image au format JPG, PNG, GIF ou WebP.');
+          fileInput.value = '';
+          photoPreview.innerHTML = `<span>📷</span>`;
+          return;
+        }
 
-   const file = fileInput.files[0];
+        // Vérification de la taille
+        if (file.size > MAX_FILE_SIZE) {
+          showAlert('Fichier trop volumineux', 'La photo ne doit pas dépasser 5 Mo.');
+          fileInput.value = '';
+          photoPreview.innerHTML = `<span>📷</span>`;
+          return;
+        }
 
-   // ===== VÉRIFICATION 2: Type de fichier valide ? =====
-   const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-   if (!allowedTypes.includes(file.type)) {
-     alert("❌ Erreur: Format invalide\nLe fichier doit être: JPG, PNG, GIF ou WebP\nVous avez envoyé: " + file.type);
-     return;
-   }
+        const reader = new FileReader();
+        reader.onload = e => {
+          photoPreview.innerHTML = `<img src="${e.target.result}" alt="Aperçu">`;
+        };
+        reader.onerror = () => {
+          showAlert('Erreur de lecture', 'Impossible de lire le fichier sélectionné.');
+          fileInput.value = '';
+          photoPreview.innerHTML = `<span>📷</span>`;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        photoPreview.innerHTML = `<span>📷</span>`;
+      }
+    });
 
-   // ===== VÉRIFICATION 3: Taille du fichier =====
-   const maxSize = 5 * 1024 * 1024; // 5MB
-   if (file.size > maxSize) {
-     const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-     alert("❌ Erreur: Fichier trop volumineux\nTaille maximum: 5MB\nVotre fichier: " + sizeMB + "MB");
-     return;
-   }
+    // Fonction pour afficher des alertes stylisées
+    function showAlert(title, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #dc2626;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+            font-family: inherit;
+        `;
 
-   // ===== VÉRIFICATION 4: Nom de fichier valide =====
-   if (!file.name || file.name.trim() === "") {
-     alert("❌ Erreur: Nom de fichier invalide ou vide");
-     return;
-   }
+        alertDiv.innerHTML = `
+            <strong>${title}</strong>
+            <div style="margin-top: 8px; font-size: 0.9em; opacity: 0.9;">${message}</div>
+        `;
 
-   // ===== VÉRIFICATION 5: Tous les champs remplis ? =====
-   const username = document.getElementById("username").value.trim();
-   const email = document.getElementById("email").value.trim();
-   const password = document.getElementById("password").value.trim();
+        document.body.appendChild(alertDiv);
 
-   if (!username) {
-     alert("❌ Erreur: Entrez un nom d'utilisateur");
-     return;
-   }
-   if (!email) {
-     alert("❌ Erreur: Entrez une adresse email");
-     return;
-   }
-   if (!password) {
-     alert("❌ Erreur: Entrez un mot de passe");
-     return;
-   }
+        // Supprimer l'alerte après 5 secondes
+        setTimeout(() => {
+            alertDiv.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 300);
+        }, 5000);
 
-   // ===== Si tout est bon, envoyer =====
-   const formData = new FormData();
-   formData.append("username", username);
-   formData.append("email", email);
-   formData.append("password", password);
-   formData.append("file", file);
+        // Ajouter les animations CSS
+        if (!document.querySelector('#alertStyles')) {
+            const style = document.createElement('style');
+            style.id = 'alertStyles';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
 
-   submitBtn.disabled = true;
-   submitBtn.textContent = "Inscription...";
+    function showSuccess(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+            font-family: inherit;
+        `;
 
-   try {
-     const resp = await fetch("/api/users/register", {
-       method: "POST",
-       body: formData
-     });
+        alertDiv.innerHTML = `
+            <strong>✅ Succès</strong>
+            <div style="margin-top: 8px; font-size: 0.9em; opacity: 0.9;">${message}</div>
+        `;
 
-     if (!resp.ok) {
-       const errorText = await resp.text();
-       alert("❌ Erreur serveur:\n" + errorText);
-       errorMsg.textContent = errorText;
-       errorMsg.style.display = "block";
-       return;
-     }
+        document.body.appendChild(alertDiv);
 
-     alert("✅ Inscription réussie!");
-     window.location.href = "/index.html";
+        setTimeout(() => {
+            alertDiv.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 300);
+        }, 5000);
+    }
 
-   } catch (err) {
-     alert("❌ Erreur réseau:\n" + err.message);
-     errorMsg.textContent = err.message;
-     errorMsg.style.display = "block";
-   } finally {
-     submitBtn.disabled = false;
-     submitBtn.textContent = "S'inscrire";
-   }
- });
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      // Validation des champs
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const file = fileInput.files[0];
+
+      // Validation du nom d'utilisateur
+      if (username.length < 3) {
+          showAlert('Nom d\'utilisateur trop court', 'Le nom d\'utilisateur doit contenir au moins 3 caractères.');
+          return;
+      }
+
+      if (username.length > 20) {
+          showAlert('Nom d\'utilisateur trop long', 'Le nom d\'utilisateur ne doit pas dépasser 20 caractères.');
+          return;
+      }
+
+      // Validation de l'email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+          showAlert('Email invalide', 'Veuillez entrer une adresse email valide.');
+          return;
+      }
+
+      // Validation du mot de passe
+      if (password.length < 4) {
+          showAlert('Mot de passe trop court', 'Le mot de passe doit contenir au moins 4 caractères.');
+          return;
+      }
+
+      // Validation de la photo
+      if (!file) {
+          showAlert('Photo manquante', 'Veuillez sélectionner une photo de profil.');
+          return;
+      }
+
+      // Vérifications finales de la photo
+      if (!ACCEPTED_FORMATS.includes(file.type)) {
+          showAlert('Format de photo invalide', 'Le format de la photo n\'est pas supporté.');
+          return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+          showAlert('Photo trop volumineuse', 'La photo ne doit pas dépasser 5 Mo.');
+          return;
+      }
+
+      const formData = new FormData();
+      formData.append("username", username);
+      formData.append("email", email);
+      formData.append("password", password);
+      formData.append("file", file);
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Inscription en cours...";
+
+      try {
+        const resp = await fetch("/api/users/register", {
+          method: "POST",
+          body: formData
+        });
+
+        const result = await resp.text();
+
+        if (resp.ok) {
+            showSuccess('Inscription réussie ! Redirection...');
+            setTimeout(() => {
+                window.location.href = "/index.html";
+            }, 2000);
+        } else {
+            // Gestion des erreurs spécifiques du serveur
+            let errorTitle = 'Erreur d\'inscription';
+            let errorMessage = result;
+
+            if (result.includes('déjà utilisé')) {
+                errorTitle = 'Compte existant';
+                if (result.includes('Username')) {
+                    errorMessage = 'Ce nom d\'utilisateur est déjà utilisé.';
+                } else if (result.includes('Email')) {
+                    errorMessage = 'Cette adresse email est déjà utilisée.';
+                }
+            } else if (result.includes('upload')) {
+                errorTitle = 'Erreur de photo';
+                errorMessage = 'Impossible d\'uploader la photo. Veuillez réessayer.';
+            }
+
+            showAlert(errorTitle, errorMessage);
+        }
+
+      } catch (err) {
+        // Erreurs réseau
+        if (err.name === 'TypeError' && err.message.includes('fetch')) {
+            showAlert('Erreur réseau', 'Impossible de se connecter au serveur. Vérifiez votre connexion.');
+        } else {
+            showAlert('Erreur inattendue', 'Une erreur est survenue. Veuillez réessayer.');
+        }
+        console.error('Erreur:', err);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "S'inscrire";
+      }
+    });
+
+    // Validation en temps réel
+    document.getElementById('username').addEventListener('input', function() {
+        if (this.value.length > 20) {
+            this.value = this.value.substring(0, 20);
+        }
+    });
+
+    document.getElementById('password').addEventListener('input', function() {
+        if (this.value.length < 4) {
+            this.style.borderColor = '#dc2626';
+        } else {
+            this.style.borderColor = '#e5e7eb';
+        }
+    });
 </script>
 
 </body>
