@@ -1,11 +1,12 @@
-FROM maven:3.8.6-openjdk-17 as builder
-WORKDIR /build
-COPY pom.xml .
-COPY src ./src
+# Build stage
+FROM maven:3.8-openjdk-17 AS builder
+WORKDIR /app
+COPY . .
 RUN mvn clean package -DskipTests
 
-FROM openjdk:17-slim
+# Runtime stage
+FROM openjdk:17-jdk-slim
 WORKDIR /app
-COPY --from=builder /build/target/*.jar app.jar
+COPY --from=builder /app/target/security-learning-1.0.0.jar app.jar
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
