@@ -332,6 +332,40 @@
         }, 5000);
     }
 
+    // Fonction pour analyser et formater les erreurs du serveur
+    function parseServerError(errorMessage) {
+        // Mapping des erreurs courantes du contrôleur
+        const errorMappings = [
+            { pattern: /Le fichier photo est requis/i, title: 'Photo manquante', message: 'Veuillez sélectionner une photo de profil.' },
+            { pattern: /Nom de fichier invalide/i, title: 'Fichier invalide', message: 'Le nom du fichier photo est invalide.' },
+            { pattern: /Erreur lors de l'upload de la photo/i, title: 'Erreur d\'upload', message: 'Impossible d\'uploader la photo vers le serveur.' },
+            { pattern: /Username déjà utilisé/i, title: 'Nom d\'utilisateur indisponible', message: 'Ce nom d\'utilisateur est déjà utilisé. Veuillez en choisir un autre.' },
+            { pattern: /Email déjà utilisé/i, title: 'Email déjà utilisé', message: 'Cette adresse email est déjà associée à un compte. Utilisez une autre adresse.' },
+            { pattern: /Impossible de créer le dossier/i, title: 'Erreur système', message: 'Problème de configuration serveur. Contactez l\'administrateur.' },
+            { pattern: /failed to read|failed to parse/i, title: 'Erreur de traitement', message: 'Erreur lors du traitement de la photo. Vérifiez le format du fichier.' },
+            { pattern: /timeout|timed out/i, title: 'Délai dépassé', message: 'La requête a pris trop de temps. Vérifiez votre connexion et réessayez.' },
+            { pattern: /network|fetch/i, title: 'Erreur réseau', message: 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.' }
+        ];
+
+        // Chercher une correspondance dans les mappings
+        for (const mapping of errorMappings) {
+            if (mapping.pattern.test(errorMessage)) {
+                return {
+                    title: mapping.title,
+                    message: mapping.message,
+                    original: errorMessage
+                };
+            }
+        }
+
+        // Si aucune correspondance, retourner l'erreur originale
+        return {
+            title: 'Erreur d\'inscription',
+            message: errorMessage,
+            original: errorMessage
+        };
+    }
+
     document.getElementById("signupForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -405,33 +439,21 @@
                 window.location.href = "/index.html";
             }, 2000);
         } else {
-            // Gestion des erreurs spécifiques du serveur
-            let errorTitle = 'Erreur d\'inscription';
-            let errorMessage = result;
+            // Analyser l'erreur du serveur
+            const errorInfo = parseServerError(result);
 
-            if (result.includes('déjà utilisé')) {
-                errorTitle = 'Compte existant';
-                if (result.includes('Username')) {
-                    errorMessage = 'Ce nom d\'utilisateur est déjà utilisé.';
-                } else if (result.includes('Email')) {
-                    errorMessage = 'Cette adresse email est déjà utilisée.';
-                }
-            } else if (result.includes('upload')) {
-                errorTitle = 'Erreur de photo';
-                errorMessage = 'Impossible d\'uploader la photo. Veuillez réessayer.';
-            }
+            // Afficher l'erreur formatée
+            showAlert(errorInfo.title, errorInfo.message);
 
-            showAlert(errorTitle, errorMessage);
+            // Afficher aussi les détails techniques en console pour le débogage
+            console.error('Erreur détaillée du serveur:', errorInfo.original);
         }
 
       } catch (err) {
         // Erreurs réseau
-        if (err.name === 'TypeError' && err.message.includes('fetch')) {
-            showAlert('Erreur réseau', 'Impossible de se connecter au serveur. Vérifiez votre connexion.');
-        } else {
-            showAlert('Erreur inattendue', 'Une erreur est survenue. Veuillez réessayer.');
-        }
-        console.error('Erreur:', err);
+        const errorInfo = parseServerError(err.message);
+        showAlert(errorInfo.title, errorInfo.message);
+        console.error('Erreur technique:', err);
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "S'inscrire";
@@ -452,6 +474,16 @@
             this.style.borderColor = '#e5e7eb';
         }
     });
+
+    // Fonction utilitaire pour afficher les erreurs dans la div errorMsg
+    function showFormError(message) {
+        errorMsg.textContent = message;
+        errorMsg.style.display = 'block';
+        // Masquer l'erreur après 10 secondes
+        setTimeout(() => {
+            errorMsg.style.display = 'none';
+        }, 10000);
+    }
 </script>
 
 </body>
