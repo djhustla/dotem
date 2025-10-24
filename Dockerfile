@@ -1,13 +1,19 @@
-# Dockerfile
-FROM eclipse-temurin:17-jre-alpine
+# Étape de build
+FROM eclipse-temurin:17-jdk-alpine as builder
+WORKDIR /app
+COPY . .
+RUN ./mvnw clean package -DskipTests
 
+# Étape d'exécution
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Copier le JAR
-COPY target/security-learning-1.0.0.jar app.jar
+# Copier le JAR depuis l'étape de build
+COPY --from=builder /app/target/*.jar app.jar
 
-# Port exposé (Render utilisera $PORT)
+# Port exposé
 EXPOSE 8080
 
 # Commande de démarrage
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "app.jar"]
+#
