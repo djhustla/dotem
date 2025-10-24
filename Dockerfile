@@ -1,4 +1,4 @@
-FROM maven:3.8.6-openjdk-17 as builder
+FROM maven:3.8.6-openjdk-17-slim as builder
 WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
