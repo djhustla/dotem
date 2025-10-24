@@ -71,4 +71,28 @@ public class UserService {
     public boolean validatePassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
+
+    public Optional<User> findById(Long userId) {
+        return userRepository.findById(userId);
+    }
+
+    // Dans UserService.java - Ajouter cette méthode
+    public User updateUser(User user) {
+        // Validation basique
+        if (user == null) {
+            throw new RuntimeException("L'utilisateur ne peut pas être null");
+        }
+
+        if (user.getId() == null) {
+            throw new RuntimeException("Impossible de mettre à jour un utilisateur sans ID");
+        }
+
+        // Vérifier que l'utilisateur existe
+        if (!userRepository.existsById(user.getId())) {
+            throw new RuntimeException("Utilisateur non trouvé avec l'ID: " + user.getId());
+        }
+
+        // Sauvegarder et retourner l'utilisateur mis à jour
+        return userRepository.save(user);
+    }
 }

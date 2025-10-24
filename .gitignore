@@ -1,25 +1,8 @@
-# Maven
 target/
-*.jar
-*.war
-*.ear
-.m2/
-
-# IDE
+.git
+.gitignore
 .idea/
 .vscode/
-*.iml
-*.swp
-
-# Logs
-logs/
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Env files (NE PAS COMMITER les credentials)
+*.md
+node_modules/
 .env
-*.properties.local
-application.properties.local

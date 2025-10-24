@@ -194,8 +194,10 @@ public class InfinityFreeUploader {
 
 
         // Test d'upload avec la nouvelle signature
-        String localFile = "C:\\java\\Security02\\data\\photos\\01.png";
-        String remoteFile = "images/011-uploaded.png";
+        String localFile = "C:\\Users\\Win\\Documents\\mes documents Doka\\k7 Flyers\\00.png";//"C:\\java\\Security02\\data\\photos\\01.png";
+        String remoteFile = "images/012222-uploaded.png";
+        String fileUrl = uploadFile(localFile, remoteFile);
+
 
         File testFile = new File(localFile);
         if (!testFile.exists()) {
@@ -203,10 +205,15 @@ public class InfinityFreeUploader {
             return;
         }
 
+        System.out.println(" url1  " + fileUrl);
+
+        /*
         // Appel de la nouvelle méthode qui retourne l'URL
         String fileUrl = uploadFile("C:\\java\\Security02\\data\\playlist\\dutch.txt", "playlist_list/dutch.txt");
         String fileUrl02 = uploadFile("C:\\java\\Security02\\data\\playlist\\us.txt", "playlist_list/us.txt");
         String fileUrl03 = uploadFile("C:\\java\\Security02\\data\\playlist\\fr.txt", "playlist_list/fr.txt");
+
+         */
 
         if (fileUrl != null) {
             System.out.println("🎯 Upload réussi! URL: " + fileUrl);

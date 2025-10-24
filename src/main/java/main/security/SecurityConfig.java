@@ -29,37 +29,33 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                       .requestMatchers("/api/users/register").permitAll()
+                        .requestMatchers("/api/users/register").permitAll()
                         .requestMatchers("/api/users/register-admin").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/index.html").permitAll()
                         .requestMatchers("/inscription/**").permitAll()
                         .requestMatchers("/connection/**").permitAll()
 
-
                         .requestMatchers("/menu/**").permitAll()
                         .requestMatchers("/data/**").permitAll()
 
                         .requestMatchers("/playlist/**").permitAll()
 
-
-
                         .requestMatchers("/textfiles/**").permitAll()
                         .requestMatchers("/photos/**").permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/api/messages/**").permitAll()
-                        .requestMatchers("/menu/**").permitAll()
                         .requestMatchers("/api/users/all").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
 
-               
+                        // NOUVEAUX ENDPOINTS POUR LE MATCHING
+                        .requestMatchers("/api/users/perfect-music-matches").authenticated()
+                        .requestMatchers("/api/users/music-soulmates").authenticated()
+                        .requestMatchers("/api/users/music-enemies").authenticated()
 
-
-
-                        // ⚠️ AJOUTE CETTE LIGNE :
+                        // Endpoints existants
                         .requestMatchers("/api/conversations/**").authenticated()
-
                         .requestMatchers("/api/users/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers("/api/messages/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()));
@@ -88,10 +84,4 @@ public class SecurityConfig {
             }
         };
     }
-
-
-
-
-
-
 }

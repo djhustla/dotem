@@ -164,7 +164,7 @@
       showSuccess('Message publié avec succès !');
       textarea.value = '';
       charCount.textContent = '0';
-      setTimeout(()=>{ window.location.href='/menu/affichermessages.html'; }, 2000);
+      setTimeout(()=>{ window.location.href='/menu/ma_communaute/affichermessages.html'; }, 2000);
     }catch(err){ showError(err.message); }
     finally{
       submitBtn.disabled=false;

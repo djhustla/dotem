@@ -20,8 +20,9 @@
     .header { text-align:center; margin-bottom:20px; }
     .header h1 { color:white; font-size:2.5rem; font-weight:700; margin-bottom:10px; text-shadow: 0 2px 10px rgba(0,0,0,0.2);}
     .header p { color: rgba(255,255,255,0.9); font-size:1rem; }
+    .button-container { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
     .back-button, .logout-button {
-      display:inline-flex; align-items:center; gap:8px; padding:12px 24px; margin-bottom:20px;
+      display:inline-flex; align-items:center; gap:8px; padding:12px 24px;
       background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color:white;
       border:2px solid rgba(255,255,255,0.3); border-radius:12px; font-size:1rem; font-weight:600;
       cursor:pointer; text-decoration:none; transition:all 0.3s;
@@ -34,9 +35,10 @@
     .user-info { flex:1; }
     .username { font-size:1.3rem; font-weight:700; color:#374151; margin-bottom:4px; }
     .user-role { font-size:0.9rem; color:#9ca3af; font-weight:500; }
-    .loading, .error { text-align:center; padding:40px; background:white; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+    .loading, .error, .empty { text-align:center; padding:40px; background:white; border-radius:16px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
     .loading { color:#667eea; font-size:1.1rem; }
     .error { color:#dc2626; font-size:1.1rem; }
+    .empty { color:#6b7280; font-size:1.1rem; }
 
     /* Menu flottant */
     .user-menu {
@@ -70,6 +72,14 @@
     .user-menu a.message:hover { background:#2563eb; }
     .user-menu a.profile { background:#16a34a; color:white; }
     .user-menu a.profile:hover { background:#15803d; }
+
+    @media (max-width: 768px) {
+      .button-container { flex-direction:column; }
+      .user-card { flex-direction:column; text-align:center; }
+      .user-photo { margin-right:0; margin-bottom:15px; }
+      .user-menu { position:static; transform:none; opacity:1; pointer-events:auto; margin-top:15px; flex-direction:row; }
+      .user-menu a { flex:1; text-align:center; }
+    }
   </style>
 </head>
 <body>
@@ -80,8 +90,10 @@
     <p>Découvrez les membres de la communauté</p>
   </div>
 
-  <a href="/menu/menu.html" class="back-button">← Retour au menu</a>
-  <button class="logout-button" id="btnLogout">Déconnexion</button>
+  <div class="button-container">
+    <a href="/menu/menu.html" class="back-button">← Retour au menu</a>
+    <button class="logout-button" id="btnLogout">Déconnexion</button>
+  </div>
 
   <div class="user-list" id="userList">
     <div class="loading">Chargement des utilisateurs...</div>
@@ -89,8 +101,8 @@
 </div>
 
 <script>
+  // Vérification de l'authentification
   const token = localStorage.getItem('accessToken');
-
   if (!token) {
     alert('Vous devez être connecté pour voir la liste des utilisateurs');
     window.location.href = '/connection/connection.html';
@@ -100,16 +112,28 @@
 
   async function loadUsers() {
     try {
-      const resp = await fetch('/api/users/all', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (!resp.ok) throw new Error("Erreur de chargement");
+      console.log('Tentative de chargement des utilisateurs...');
 
-      const users = await resp.json();
+      const response = await fetch('/api/users/all', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Statut de la réponse:', response.status);
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
+      }
+
+      const users = await response.json();
+      console.log('Utilisateurs reçus:', users);
+
       userList.innerHTML = "";
 
-      if (users.length === 0) {
-        userList.innerHTML = '<div class="loading">Aucun utilisateur trouvé</div>';
+      if (!users || users.length === 0) {
+        userList.innerHTML = '<div class="empty">Aucun utilisateur trouvé dans la communauté</div>';
         return;
       }
 
@@ -130,7 +154,7 @@
 
         const name = document.createElement("div");
         name.className = "username";
-        name.textContent = user.username;
+        name.textContent = user.username || 'Utilisateur sans nom';
 
         const role = document.createElement("div");
         role.className = "user-role";
@@ -143,14 +167,15 @@
         const menu = document.createElement("div");
         menu.className = "user-menu";
 
+        // CORRIGÉ : Chemin vers conversation.html
         const msgLink = document.createElement("a");
-        msgLink.href = `/menu/conversation.html?userId=${user.id}`;
-        msgLink.textContent = "Écrire un message";
+        msgLink.href = `/menu/ma_communaute/conversation.html?userId=${user.id}`;
+        msgLink.textContent = "💬 Message";
         msgLink.className = "message";
 
         const profileLink = document.createElement("a");
-        profileLink.href = `/menu/profilUser.html?userId=${user.id}`;
-        profileLink.textContent = "Voir le profil";
+        profileLink.href = `/menu/profil.html?userId=${user.id}`;
+        profileLink.textContent = "👤 Profil";
         profileLink.className = "profile";
 
         menu.appendChild(msgLink);
@@ -161,36 +186,51 @@
         card.appendChild(menu);
         userList.appendChild(card);
       });
-    } catch (err) {
-      userList.innerHTML = '<div class="error">Erreur lors du chargement des utilisateurs</div>';
-      console.error(err);
+
+    } catch (error) {
+      console.error('Erreur détaillée:', error);
+      userList.innerHTML = `
+        <div class="error">
+          <p>Erreur lors du chargement des utilisateurs</p>
+          <p style="font-size:0.9rem; margin-top:10px; color:#6b7280;">
+            Détail: ${error.message}
+          </p>
+          <button onclick="loadUsers()" style="margin-top:15px; padding:8px 16px; background:#667eea; color:white; border:none; border-radius:8px; cursor:pointer;">
+            Réessayer
+          </button>
+        </div>
+      `;
     }
   }
 
-  loadUsers();
-
+  // Déconnexion
   document.getElementById('btnLogout').addEventListener('click', async () => {
     const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return;
 
     try {
-      const res = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ refreshToken })
-      });
-      if (res.ok) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        alert('Déconnexion réussie');
-        window.location.href = '/connection/connection.html';
-      } else {
-        alert('Erreur lors de la déconnexion');
+      if (refreshToken) {
+        const res = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ refreshToken })
+        });
       }
+
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      alert('Déconnexion réussie');
+      window.location.href = '/connection/connection.html';
+
     } catch (err) {
-      alert('Erreur réseau lors de la déconnexion');
+      console.error('Erreur déconnexion:', err);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '/connection/connection.html';
     }
   });
+
+  // Charger les utilisateurs au démarrage
+  loadUsers();
 </script>
 
 </body>

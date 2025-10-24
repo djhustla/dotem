@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Playlists</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: linear-gradient(135deg, #8e44ad, #9b59b6, #a66dd4);
+          min-height:100vh;
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          padding:20px;
+          position:relative;
+        }
+
+        .buttons-container {
+          position: fixed; top:20px; right:20px;
+          display:flex; gap:10px; z-index:100;
+        }
+        .buttons-container button {
+          background:#fff; color:#8e44ad; border:none; padding:8px 16px; border-radius:10px;
+          font-size:0.95rem; font-weight:600; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.2); transition:all 0.2s;
+        }
+        .buttons-container button:hover { background:#8e44ad; color:#fff; }
+
+        .menu-container {
+          background:white;
+          border-radius:20px;
+          box-shadow:0 10px 40px rgba(0,0,0,0.25);
+          width:100%;
+          max-width:400px;
+          padding:30px;
+          text-align:center;
+        }
+
+        h1 { margin-bottom:25px; font-size:2rem; color:#6c3483; }
+
+        .menu {
+          display:flex;
+          flex-direction:column;
+          gap:15px;
+        }
+
+        .menu button {
+          padding:15px;
+          font-size:1.1rem;
+          font-weight:600;
+          border:none;
+          border-radius:12px;
+          cursor:pointer;
+          transition:all 0.3s ease;
+          color:white;
+          box-shadow:0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .menu button:hover:not(:disabled) {
+          transform:translateY(-2px);
+          box-shadow:0 6px 16px rgba(0,0,0,0.4);
+        }
+
+        /* Style pour le Rap Français - Bleu Blanc Rouge */
+        .menu button.rap-fr-btn {
+          background: linear-gradient(135deg, #0055A4, #FFFFFF, #EF4135);
+          color: #0055A4;
+          text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        }
+
+        /* Style pour le Rap Américain - Rouge Blanc Bleu */
+        .menu button.rap-us-btn {
+          background: linear-gradient(135deg, #B22234, #FFFFFF, #3C3B6E);
+          color: #3C3B6E;
+          text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        }
+
+        /* Style pour Dutch Vibes - Orange et Bleu */
+        .menu button.dutch-btn {
+          background: linear-gradient(135deg, #AE1C28, #FFFFFF, #21468B);
+          color: #21468B;
+          text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        }
+
+        /* Style pour K-Pop - Rose et Noir */
+        .menu button.kpop-btn {
+          background: linear-gradient(135deg, #FF69B4, #FFB6C1, #000000);
+          color: white;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Style pour Shatta - Jaune Vert Rouge (couleurs africaines) */
+        .menu button.shatta-btn {
+          background: linear-gradient(135deg, #FFD700, #008000, #FF0000);
+          color: white;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Style pour Mashino - Violet et Argent */
+        .menu button.mashino-btn {
+          background: linear-gradient(135deg, #8B00FF, #C0C0C0, #4B0082);
+          color: white;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        @media (max-width:500px){
+          h1{font-size:1.5rem;}
+          .menu button{font-size:1rem;padding:12px;}
+        }
+    </style>
+</head>
+<body>
+
+<div class="buttons-container">
+    <button onclick="window.location.href='http://localhost:8080/menu/menu.html'">🔙 Retour au menu principal</button>
+    <button id="btnLogout">🚪 Déconnexion</button>
+</div>
+
+<div class="menu-container">
+    <h1>Playlists</h1>
+    <div class="menu">
+        <button class="rap-fr-btn" onclick="window.location.href='playlist.html?src=fr.txt&title=Rap Français'">🎵 Rap Français</button>
+
+        <button class="rap-us-btn" onclick="window.location.href='playlist.html?src=us.txt&title=Rap Américain'">🇺🇸 Rap Américain</button>
+
+        <button class="dutch-btn" onclick="window.location.href='playlist.html?src=dutch.txt&title=Dutch Vibes'">🇳🇱 DutchVibes</button>
+
+        <button class="kpop-btn" onclick="window.location.href='playlist.html?src=kpop.txt&title=K-Pop'">🇰🇷 K-Pop</button>
+
+        <button class="shatta-btn" onclick="window.location.href='playlist.html?src=shatta.txt&title=Shatta'">🔥 Shatta</button>
+
+        <button class="mashino-btn" onclick="window.location.href='playlist.html?src=mashino.txt&title=mashino'">🎭 Mashino</button>
+    </div>
+</div>
+
+<script>
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      alert('Déconnexion réussie');
+      window.location.href = '/connection/connection.html';
+    });
+</script>
+
+</body>
+</html>

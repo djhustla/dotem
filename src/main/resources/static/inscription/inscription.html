@@ -141,6 +141,12 @@
           box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
+        button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
         .error {
           background: #fee;
           color: #dc2626;
@@ -218,9 +224,9 @@
     const ACCEPTED_FORMATS = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+    // ===== GESTION DE LA PHOTO =====
     chooseBtn.addEventListener("click", () => fileInput.click());
 
-    // ===== COMPRESSION D'IMAGE =====
     function compressImage(file, callback) {
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -234,7 +240,6 @@
                 let width = img.width;
                 let height = img.height;
 
-                // Réduire à max 800x800
                 if (width > height) {
                     if (width > 800) {
                         height = Math.round(height * (800 / width));
@@ -251,7 +256,6 @@
                 canvas.height = height;
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Convertir en blob avec compression JPEG à 75%
                 canvas.toBlob((blob) => {
                     callback(blob);
                 }, 'image/jpeg', 0.75);
@@ -376,6 +380,7 @@
         }, 5000);
     }
 
+    // ===== SOUMISSION DU FORMULAIRE =====
     document.getElementById("signupForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -384,6 +389,7 @@
         const password = document.getElementById("password").value;
         const file = fileInput.files[0];
 
+        // Validation de base
         if (!username || !email || !password || !file) {
             showAlert('Erreur', 'Tous les champs sont requis.');
             return;
@@ -402,7 +408,7 @@
         submitBtn.disabled = true;
         submitBtn.textContent = "Compression...";
 
-        // ===== COMPRESSION AVANT ENVOI =====
+        // Compression de l'image
         compressImage(file, async (compressedBlob) => {
             submitBtn.textContent = "Envoi...";
 

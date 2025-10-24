@@ -1,18 +1,13 @@
+# Dockerfile
+FROM eclipse-temurin:17-jre-alpine
 
-# Build stage
-FROM maven:3.8-openjdk-17 AS builder
-WORKDIR /build
-COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -DskipTests
-
-# Runtime stage
-FROM openjdk:17-slim
 WORKDIR /app
-COPY --from=builder /build/target/*.jar app.jar
+
+# Copier le JAR
+COPY target/security-learning-1.0.0.jar app.jar
+
+# Port exposé (Render utilisera $PORT)
 EXPOSE 8080
 
-# Définis le profil PROD correctement
-ENV SPRING_PROFILES_ACTIVE=prod
-
-CMD ["java", "-jar", "app.jar"]
+# Commande de démarrage
+ENTRYPOINT ["java", "-jar", "app.jar"]

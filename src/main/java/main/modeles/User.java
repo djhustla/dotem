@@ -1,7 +1,10 @@
 package main.modeles;
 
 import jakarta.persistence.*;
+
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -27,9 +30,17 @@ public class User {
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt = new Date(); // date de création automatique
 
-    // ✅ NOUVELLE COLONNE pour stocker l'adresse/URL de la photo
+    // ✅ COLONNE pour stocker l'adresse/URL de la photo
     @Column(name = "photo_url")
     private String photoUrl; // ex: "/uploads/users/lucie.png"
+
+    // ✅ NOUVELLE COLONNE pour stocker l'URL du son d'entrée
+    @Column(name = "son_entree_url", nullable = true)
+    private String sonEntreeURL; // ex: "/uploads/sons/user123_son.wav"
+
+    // ✅ Liste des préférences musicales
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<MusicPreference> musicPreferences;
 
     // =====================
     // Getters et setters
@@ -41,7 +52,11 @@ public class User {
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
 
     public String getPhotoUrl() { return photoUrl; }
-    public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; } // ✅ setter photo
+    public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; }
+
+    // ✅ NOUVEAU Getter et Setter pour sonEntreeURL
+    public String getSonEntreeURL() { return sonEntreeURL; }
+    public void setSonEntreeURL(String sonEntreeURL) { this.sonEntreeURL = sonEntreeURL; }
 
     // Constructeurs
     public User() {}
@@ -64,4 +79,22 @@ public class User {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    // Getters et Setters pour les préférences musicales
+    public List<MusicPreference> getMusicPreferences() {
+        return musicPreferences;
+    }
+
+    public void setMusicPreferences(List<MusicPreference> musicPreferences) {
+        this.musicPreferences = musicPreferences;
+    }
+
+    // Méthode utilitaire pour ajouter une préférence
+    public void addMusicPreference(MusicPreference preference) {
+        if (this.musicPreferences == null) {
+            this.musicPreferences = new ArrayList<>();
+        }
+        preference.setUser(this);
+        this.musicPreferences.add(preference);
+    }
 }

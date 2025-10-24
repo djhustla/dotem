@@ -17,7 +17,8 @@
     .menu-content { padding:30px; }
     .menu { display:flex; flex-direction:column; gap:14px; margin-bottom:25px;}
     .menu button { padding:16px 20px; border:none; border-radius:14px; font-size:1.1rem; font-weight:600;
-                   cursor:pointer; transition: all 0.3s; font-family:inherit; text-align:left; display:flex; align-items:center; gap:12px;}
+                   cursor:pointer; transition: all 0.3s; font-family:inherit; text-align:left; display:flex; align-items:center; gap:12px;
+                   position:relative;}
     .menu button::before { content:attr(data-icon); font-size:1.3rem; }
     .menu button:not(:disabled) { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; box-shadow:0 4px 12px rgba(102,126,234,0.3);}
     .menu button:not(:disabled):hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(102,126,234,0.4);}
@@ -25,6 +26,89 @@
     .divider { height:1px; background: linear-gradient(to right, transparent, #e5e7eb, transparent); margin:25px 0;}
     .output { background:#f8f9ff; border:2px solid #e5e7eb; border-radius:12px; padding:16px; text-align:center;
               color:#374151; font-size:0.95rem; font-weight:500; }
+
+    /* Styles pour le bouton des préférences musicales */
+    .music-preferences-btn { position:relative; }
+
+    .preferences-tooltip {
+      position: absolute;
+      left: 50%;
+      top: -10px;
+      transform: translateX(-50%) translateY(-100%);
+      background: white;
+      border: 2px solid #667eea;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      min-width: 280px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .music-preferences-btn:hover .preferences-tooltip {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(-110%);
+    }
+
+    .preferences-tooltip::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: -8px;
+      transform: translateX(-50%);
+      border: 8px solid transparent;
+      border-top-color: #667eea;
+    }
+
+    .preference-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .preference-item:last-child {
+      border-bottom: none;
+    }
+
+    .preference-genre {
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .preference-level {
+      font-size: 0.85rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .level-3 { background: #dbeafe; color: #2563eb; } /* Adore */
+    .level-2 { background: #d1fae5; color: #059669; } /* Apprécie */
+    .level-1 { background: #fef3c7; color: #d97706; } /* Neutre */
+    .level-0 { background: #fee2e2; color: #dc2626; } /* Déteste */
+
+    .no-preferences {
+      color: #6b7280;
+      font-style: italic;
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .preferences-title {
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 10px;
+      text-align: center;
+      font-size: 1rem;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
   </style>
 </head>
 <body>
@@ -39,10 +123,31 @@
     <div class="menu">
       <button id="btnProfil" data-icon="👤">Mon Profil</button>
       <button id="btnListeProfils" data-icon="👥">Liste des membres</button>
-      <button id="btnMessages" data-icon="💬">Apercu des postes des membres</button>
-      <button id="btnEcrireMessage" data-icon="✏️">Ecrire un post</button>
-      <button id="btnMaMessagerie" data-icon="📨">Ma messagerie</button>
+
+      <!-- NOUVEAU BOUTON : Parler avec ma team -->
+      <button id="btnTeam" data-icon="💬">Parler avec ma team</button>
+
       <button id="btnPlaylists" data-icon="🎵">Playlists musicales</button>
+
+      <!-- BOUTON EXISTANT : Voir les préférences musicales -->
+      <button id="btnPreferencesMusicales" class="music-preferences-btn" data-icon="🎶">
+        Voir les préférences musicales
+        <div class="preferences-tooltip" id="preferencesTooltip">
+          <div class="preferences-title">🎵 Mes Préférences Musicales</div>
+          <div id="preferencesList">
+            <!-- Les préférences seront chargées dynamiquement ici -->
+          </div>
+        </div>
+      </button>
+
+      <!-- NOUVEAU BOUTON : Remplissez vos goûts musicaux -->
+      <button id="btnGoutsMusicaux" data-icon="✨">Remplissez vos goûts musicaux</button>
+
+      <!-- NOUVEAU BOUTON : Point commun (ou pas ...) avec les autres -->
+      <button id="btnPointCommun" data-icon="🔍">Point commun (ou pas ...) avec les autres</button>
+
+      <!-- NOUVEAU BOUTON : Encode ton son de bienvenue -->
+      <button id="btnSonBienvenue" data-icon="🎵">Encode ton son de bienvenue</button>
     </div>
 
     <div class="divider"></div>
@@ -57,6 +162,7 @@
 
 <script>
   const output = document.getElementById("output");
+  const preferencesList = document.getElementById("preferencesList");
 
   // Vérifier l'authentification
   const token = localStorage.getItem('accessToken');
@@ -65,12 +171,20 @@
     window.location.href = '/connection/connection.html';
   }
 
+  // Variable pour stocker l'ID de l'utilisateur courant
+  let currentUserId = null;
+
   async function checkAuth() {
     try {
       const response = await fetch('/api/users/me', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
       if (!response.ok) throw new Error('Token invalide');
+
+      const userData = await response.json();
+      currentUserId = userData.id; // Stocker l'ID de l'utilisateur courant
+
+      return userData;
     } catch (err) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -78,15 +192,168 @@
       window.location.href = '/connection/connection.html';
     }
   }
-  checkAuth();
 
-  // Navigation boutons
-  document.getElementById("btnProfil").addEventListener("click", ()=>{ output.textContent="Ouverture de votre profil..."; setTimeout(()=>{window.location.href="profil.html";},300);});
-  document.getElementById("btnListeProfils").addEventListener("click", ()=>{ output.textContent="Ouverture de la liste des profils..."; setTimeout(()=>{window.location.href="afficherUserList.html";},300);});
-  document.getElementById("btnMessages").addEventListener("click", ()=>{ output.textContent="Ouverture de la liste des messages..."; setTimeout(()=>{window.location.href="affichermessages.html";},300);});
-  document.getElementById("btnEcrireMessage").addEventListener("click", ()=>{ output.textContent="Ouverture de la page d'écriture..."; setTimeout(()=>{window.location.href="ecriremessage.html";},300);});
-  document.getElementById("btnMaMessagerie").addEventListener("click", ()=>{ output.textContent="Ouverture de votre messagerie..."; setTimeout(()=>{window.location.href="messagerie.html";},300);});
-  document.getElementById("btnPlaylists").addEventListener("click", ()=>{ output.textContent="Ouverture des playlists musicales..."; setTimeout(()=>{window.location.href="musicmenu.html";},300);});
+  // Fonction pour charger les préférences musicales
+  async function loadMusicPreferences() {
+    try {
+      const response = await fetch('/api/users/me/music-preferences', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (response.ok) {
+        const preferences = await response.json();
+        displayPreferences(preferences);
+      } else {
+        preferencesList.innerHTML = '<div class="no-preferences">Aucune préférence musicale définie</div>';
+      }
+    } catch (err) {
+      console.error('Erreur chargement préférences:', err);
+      preferencesList.innerHTML = '<div class="no-preferences">Erreur de chargement</div>';
+    }
+  }
+
+  // Fonction pour afficher les préférences dans le tooltip
+  function displayPreferences(preferences) {
+    if (!preferences || preferences.length === 0) {
+      preferencesList.innerHTML = '<div class="no-preferences">Aucune préférence musicale définie</div>';
+      return;
+    }
+
+    let html = '';
+    preferences.forEach(pref => {
+      const levelClass = `level-${pref.level}`;
+      const levelText = getLevelText(pref.level);
+
+      html += `
+        <div class="preference-item">
+          <span class="preference-genre">${formatGenreName(pref.musicType)}</span>
+          <span class="preference-level ${levelClass}">${levelText}</span>
+        </div>
+      `;
+    });
+
+    preferencesList.innerHTML = html;
+  }
+
+  // Fonction pour formater le nom du genre
+  function formatGenreName(genre) {
+    const genreNames = {
+      'KPOP': 'K-Pop',
+      'RAP_FRANCAIS': 'Rap Français',
+      'RAP_AMERICAIN': 'Rap Américain',
+      'LATINO': 'Latino',
+      'COMMERCIAL': 'Commercial',
+      'ELECTRO': 'Electro'
+    };
+    return genreNames[genre] || genre;
+  }
+
+  // Fonction pour obtenir le texte du niveau
+  function getLevelText(level) {
+    const levels = {
+      3: '❤️ Adore',
+      2: '😊 Apprécie',
+      1: '😐 Neutre',
+      0: '😠 Déteste'
+    };
+    return levels[level] || 'Inconnu';
+  }
+
+  // MODIFIÉ : Bouton Profil - Redirige vers profil.html avec l'ID utilisateur
+  document.getElementById("btnProfil").addEventListener("click", async () => {
+    output.textContent = "Chargement de votre profil...";
+
+    try {
+      // Si on n'a pas encore l'ID, on le récupère
+      if (!currentUserId) {
+        const userData = await checkAuth();
+        currentUserId = userData.id;
+      }
+
+      if (currentUserId) {
+        output.textContent = "Ouverture de votre profil...";
+        // Redirection vers la page profil avec l'ID en paramètre
+        setTimeout(() => {
+          window.location.href = `/menu/profil.html?userId=${currentUserId}`;
+        }, 300);
+      } else {
+        output.textContent = "Erreur: Impossible de récupérer votre ID";
+      }
+    } catch (err) {
+      output.textContent = "Erreur réseau lors du chargement du profil";
+      console.error('Erreur:', err);
+    }
+  });
+
+  // Navigation autres boutons
+  document.getElementById("btnListeProfils").addEventListener("click", ()=>{
+    output.textContent="Ouverture de la liste des profils...";
+    setTimeout(()=>{window.location.href="afficherUserList.html";},300);
+  });
+
+  // NOUVEAU : Bouton Parler avec ma team
+  document.getElementById("btnTeam").addEventListener("click", ()=>{
+    output.textContent="Ouverture de votre espace team...";
+    setTimeout(()=>{window.location.href="ma_communaute/ma_communaute.html";},300);
+  });
+
+  // MODIFIÉ : Bouton Playlists musicales - Nouveau chemin
+  document.getElementById("btnPlaylists").addEventListener("click", ()=>{
+    output.textContent="Ouverture des playlists musicales...";
+    setTimeout(()=>{window.location.href="playlist_menu/playlist_menu.html";},300);
+  });
+
+  // NOUVEAU : Bouton Remplissez vos goûts musicaux
+  document.getElementById("btnGoutsMusicaux").addEventListener("click", ()=>{
+    output.textContent="Ouverture du formulaire de goûts musicaux...";
+    setTimeout(()=>{window.location.href="choix_gout_musicaux.html";},300);
+  });
+
+  // NOUVEAU BOUTON : Point commun (ou pas ...) avec les autres
+  document.getElementById("btnPointCommun").addEventListener("click", ()=>{
+    output.textContent="Recherche des points communs musicaux...";
+    setTimeout(()=>{window.location.href="style_music_users/style_music_users.html";},300);
+  });
+
+  // NOUVEAU BOUTON : Encode ton son de bienvenue
+  document.getElementById("btnSonBienvenue").addEventListener("click", ()=>{
+    output.textContent="Ouverture de l'encodeur de son...";
+    setTimeout(()=>{window.location.href="menu_encodage_son.html";},300);
+  });
+
+  // Bouton Préférences Musicales (clic)
+  document.getElementById("btnPreferencesMusicales").addEventListener("click", async () => {
+    output.textContent = "Chargement des préférences musicales...";
+
+    try {
+      const response = await fetch('/api/users/me/music-preferences', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (response.ok) {
+        const preferences = await response.json();
+        if (preferences.length > 0) {
+          let message = "Vos préférences musicales:\n";
+          preferences.forEach(pref => {
+            const levelText = getLevelText(pref.level);
+            message += `• ${formatGenreName(pref.musicType)}: ${levelText}\n`;
+          });
+          output.textContent = message;
+        } else {
+          output.textContent = "Vous n'avez pas encore défini de préférences musicales";
+        }
+      } else {
+        output.textContent = "Erreur lors du chargement des préférences";
+      }
+    } catch (err) {
+      output.textContent = "Erreur réseau lors du chargement des préférences";
+    }
+  });
+
+  // Charger les préférences au survol du bouton
+  document.getElementById("btnPreferencesMusicales").addEventListener("mouseenter", () => {
+    loadMusicPreferences();
+  });
 
   // 🔹 Bouton Déconnexion
   document.getElementById("btnLogout").addEventListener("click", async () => {
@@ -102,6 +369,7 @@
       if (response.ok) {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('currentUserData');
         alert('Déconnexion réussie');
         window.location.href = '/connection/connection.html';
       } else {
@@ -111,6 +379,9 @@
       alert('Erreur réseau lors de la déconnexion');
     }
   });
+
+  // Initialisation - Récupérer l'ID utilisateur au chargement
+  checkAuth();
 </script>
 
 </body>
